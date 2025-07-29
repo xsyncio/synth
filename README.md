@@ -1,7 +1,8 @@
 <div align="center">
   <h1>synth</h1>
-  <img width="1650" height="442" alt="synth_banner" src="https://github.com/user-attachments/assets/8e2704d4-7e60-4bd4-9159-b03c3fe3f4d4" />
+  <img width="1491" height="365" alt="synth_new" src="https://github.com/user-attachments/assets/d4bb6f62-c0cb-49bb-a4d2-c21365021619" />
 </div>
+
 
 ## Table of Contents
 
