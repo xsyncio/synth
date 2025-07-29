@@ -10,22 +10,6 @@
 2. [Key Features](#key-features)
 3. [Architecture & Modules](#architecture--modules)
 4. [Installation](#installation)
-5. [Usage](#usage)
-
-   * [Basic Scan](#basic-scan)
-   * [Advanced Options](#advanced-options)
-   * [Examples](#examples)
-6. [CLI Reference](#cli-reference)
-7. [Reporting](#reporting)
-8. [Performance & Memory Efficiency](#performance--memory-efficiency)
-
-9. [Extending & Customization](#extending--customization)
-10. [Testing](#testing)
-11. [Contributing![Uploading synth_banner.png…]()
-](#contributing)
-12. [License](#license)
-13. [Acknowledgements](#acknowledgements)
-
 ---
 
 ## Overview
