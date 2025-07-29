@@ -17,7 +17,7 @@
    * [Examples](#examples)
 6. [CLI Reference](#cli-reference)
 7. [Reporting](#reporting)
-8. [Performance & Memory Efficiency](#performance--memory-efficiency)![Uploading synth_banner.png…]()
+8. [Performance & Memory Efficiency](#performance--memory-efficiency)
 
 9. [Extending & Customization](#extending--customization)
 10. [Testing](#testing)
@@ -199,12 +199,6 @@ Unit & integration tests cover:
 * Regex detection (`analyzer` module).
 * Utility functions (`utils`).
 * Scanner end-to-end (`scanner` tests).
-
-Run tests:
-
-```bash
-cargo test -- --nocapture
-```
 
 ---
 
