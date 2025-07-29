@@ -152,58 +152,6 @@ Generated alongside JSON when `--output` is provided.
 
 ---
 
-## Performance & Memory Efficiency
-
-* **StreamingTextReader** reads large files in 64KB chunks.
-* **Memory-mapped I/O** for hashing & content scanning.
-* **MemoryMonitor** enforces MB limits, gracefully skips large files.
-* **Parallel Processing** with `rayon` thread pool.
-* **Asynchronous UI** with `tokio` tasks for non-blocking progress updates.
-
-Benchmark with `criterion` in `benches/scan_bench.rs`:
-
-```bash
-cargo bench
-```
-
----
-
-## Extending & Customization
-
-* **Add new artifact detectors**: Extend `ContentAnalyzer::compile_*_patterns` and handle in `analyze_chunk`.
-* **Custom report templates**: Modify `reporter/HtmlReporter::generate_html`.
-* **Integrate additional scoring rules**: Update `calculate_risk_score` in scanner module.
-
----
-
-## Testing
-
-Unit & integration tests cover:
-
-* Regex detection (`analyzer` module).
-* Utility functions (`utils`).
-* Scanner end-to-end (`scanner` tests).
-
----
-
-## Contributing
-
-1. Fork the repo.
-2. Create a feature branch: `git checkout -b feature/my-feature`.
-3. Write code & tests.
-4. Run `cargo fmt` & `cargo clippy`.
-5. Submit a Pull Request.
-
-Please follow the existing coding style and update this README with any new features.
-
----
-
-## License
-
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
-
----
-
 ## Acknowledgements
 
 * Rust ecosystem: `tokio`, `rayon`, `clap`, `indicatif`.
