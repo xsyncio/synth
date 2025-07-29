@@ -1,18 +1,8 @@
-
-<<<<<<< HEAD
-![synth Banner](https://raw.githubusercontent.com/yourusername/synth/main/assets/synth_banner.png)
-
-> **Tagline:** “Search what you can’t find.”
-
----
-git
-=======
 <div align="center">
   <h1>synth</h1>
   <img width="1650" height="442" alt="synth_banner" src="https://github.com/user-attachments/assets/8e2704d4-7e60-4bd4-9159-b03c3fe3f4d4" />
 </div>
 
->>>>>>> cf21cd1b33f51868acf33d5cbff16385b79e8da5
 ## Table of Contents
 
 1. [Overview](#overview)
