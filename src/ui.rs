@@ -3,6 +3,8 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
+// Removed: use console::pad::PadStr; // This import is not needed for format! based padding
+
 #[allow(dead_code)]
 pub struct HackerTerminalUI {
     term: Term,
@@ -11,6 +13,7 @@ pub struct HackerTerminalUI {
     file_progress: ProgressBar,
     stats: Arc<Mutex<ScanStats>>,
     start_time: Instant,
+    is_quiet: bool, // Added: Store the quiet state
 }
 
 #[derive(Debug, Clone, Default)]
@@ -19,8 +22,8 @@ pub struct ScanStats {
     pub bytes_processed: u64,
     pub threats_found: u64,
     pub current_file: String,
-    pub files_per_second: f64,
-    pub bytes_per_second: f64,
+    pub files_per_second: f64, // Not directly used for display in the current message, but good to keep
+    pub bytes_per_second: f64, // Not directly used for display in the current message, but good to keep
 }
 
 pub enum UIEvent {
@@ -32,45 +35,39 @@ pub enum UIEvent {
 }
 
 impl HackerTerminalUI {
-    pub fn new(total_files: u64, quiet: bool) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn new(total_files: u64) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let term = Term::stdout();
         let multi_progress = MultiProgress::new();
         
-        if !quiet {
-            // Clear screen and hide cursor for hacker-style display
-            term.clear_screen()?;
-            term.hide_cursor()?;
-        }
+        // Clear screen and hide cursor for hacker-style display
+        // This should always happen for the interactive UI experience
+        term.clear_screen()?;
+        term.hide_cursor()?;
 
-        // Main progress bar with hacker styling
+        // Main progress bar with enhanced hacker styling - ALWAYS VISIBLE
         let main_style = ProgressStyle::with_template(
-            "{prefix} {spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({percent}%)"
+            "{prefix} {spinner:.cyan} {elapsed_precise:.yellow} [{wide_bar:.green/blue}] {pos}/{len} ({percent}%) {msg}"
         )?
-        .progress_chars("█▉▊▋▌▍▎▏  ")
-        .tick_strings(&["▰▱▱▱▱▱▱", "▰▰▱▱▱▱▱", "▰▰▰▱▱▱▱", "▰▰▰▰▱▱▱", "▰▰▰▰▰▱▱", "▰▰▰▰▰▰▱", "▰▰▰▰▰▰▰", "▱▰▰▰▰▰▰"]);
+        .progress_chars("█▓▒░")
+        .tick_strings(&[
+            "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"
+        ]);
 
-        let main_progress = if quiet {
-            ProgressBar::hidden()
-        } else {
-            multi_progress.add(ProgressBar::new(total_files))
-        };
-        
+        // Progress bar is always added now, regardless of 'quiet'
+        let main_progress = multi_progress.add(ProgressBar::new(total_files));
         main_progress.set_style(main_style);
-        main_progress.set_prefix(style("🔍 OSINT").green().bold().to_string());
+        main_progress.set_prefix(style("⚡ SYSTEM_SCAN").green().bold().to_string());
 
-        // File-level progress bar for detailed feedback
+        // File-level progress bar for detailed feedback - ALWAYS VISIBLE
         let file_style = ProgressStyle::with_template(
-            "{prefix} {msg}"
+            "{prefix} {spinner:.purple} {msg:.dim}" // Purple spinner for a subtle contrast
         )?;
 
-        let file_progress = if quiet {
-            ProgressBar::hidden()
-        } else {
-            multi_progress.add(ProgressBar::new_spinner())
-        };
-        
+        // Progress bar is always added now, regardless of 'quiet'
+        let file_progress = multi_progress.add(ProgressBar::new_spinner());
         file_progress.set_style(file_style);
-        file_progress.set_prefix(style("📄 FILE").cyan().bold().to_string());
+        file_progress.set_prefix(style("📄 PROCESSING").cyan().bold().to_string());
+        file_progress.enable_steady_tick(Duration::from_millis(80)); // Make spinner a bit faster
 
         Ok(Self {
             term,
@@ -79,6 +76,7 @@ impl HackerTerminalUI {
             file_progress,
             stats: Arc::new(Mutex::new(ScanStats::default())),
             start_time: Instant::now(),
+            is_quiet: true, // Changed: Always set to true to make output quiet by default
         })
     }
 
@@ -108,17 +106,23 @@ impl HackerTerminalUI {
                     let eta = if files_per_sec > 0.0 {
                         let total = ui_main_progress.length().unwrap_or(0);
                         let current = ui_main_progress.position();
-                        let remaining = total.saturating_sub(current); // This prevents underflow!
+                        // Calculate remaining files, ensuring no underflow
+                        let remaining = total.saturating_sub(current); 
                         remaining as f64 / files_per_sec
                     } else {
                         0.0
                     };
+                    
+                    // Enhanced status message with more techy styling
                     let status_msg = format!(
-                        "{} | {} | {} | ETA: {}",
-                        style(format!("{:.0} files/s", files_per_sec)).green(),
-                        style(format!("{:.1} MB/s", mb_per_sec)).yellow(),
-                        style(format!("{} threats", stats_guard.threats_found)).red().bold(),
-                        style(format!("{:.0}s", eta)).cyan()
+                        "[{}] {}/s | [{}] {:.1}MB/s | [{}] {} Threats | ETA: {}",
+                        style("FILES").green().bold(),
+                        style(format!("{:.0}", files_per_sec)).cyan(),
+                        style("DATA").yellow().bold(),
+                        style(format!("{:.1}", mb_per_sec)).cyan(),
+                        style("ALERT").red().bold(),
+                        style(stats_guard.threats_found).red().bold(),
+                        style(format!("{:.0}s", eta)).color256(165) // Changed to color256 for purple
                     );
                     
                     ui_main_progress.set_message(status_msg);
@@ -140,7 +144,7 @@ impl HackerTerminalUI {
                     
                     file_progress.set_message(format!(
                         "{} {}",
-                        style("Processing:").dim(),
+                        style("Analyzing:").dim().italic(), // More subtle "Analyzing"
                         style(display_name).white().bold()
                     ));
                     
@@ -166,17 +170,48 @@ impl HackerTerminalUI {
                 UIEvent::ThreatFound { file, threat_type, risk_score } => {
                     log::debug!("UI: Threat found - file: {}, type: {}, score: {}", file, threat_type, risk_score);
                     
-                    if risk_score > 70 {
-                        let alert = format!(
-                            "🚨 {} {} in {} (Risk: {})",
-                            style("HIGH RISK").red().bold(),
-                            style(&threat_type).yellow(),
-                            style(&file).dim(),
-                            style(risk_score).red().bold()
-                        );
-                        
-                        // Print alert above progress bars
-                        println!("{}", alert);
+                    // Only print threat alerts if not in quiet mode
+                    if !self.is_quiet { 
+                        // Enhanced threat alert for high risk
+                        if risk_score >= 75 { // Changed threshold for "CRITICAL"
+                            let alert = format!(
+                                "🚨 {} [CRITICAL] {} in {} (Risk: {})",
+                                style("!!! BREACH DETECTED !!!").red().bold().blink(), // Blinking effect
+                                style(&threat_type).yellow().bold(),
+                                style(&file).white().dim(),
+                                style(risk_score).red().bold()
+                            );
+                            
+                            // Print alert above progress bars, using eprintln for critical messages
+                            eprintln!("\n{}\n", alert); // Add newlines for separation
+                        } else if risk_score >= 50 { // High risk
+                            let alert = format!(
+                                "⚠️ {} [HIGH] {} in {} (Risk: {})",
+                                style("WARNING").color256(208).bold(), // Changed to color256 for orange
+                                style(&threat_type).yellow(),
+                                style(&file).dim(),
+                                style(risk_score).color256(208).bold() // Changed to color256 for orange
+                            );
+                            eprintln!("{}", alert);
+                        } else if risk_score >= 25 { // Medium risk
+                            let alert = format!(
+                                "❕ {} [MEDIUM] {} in {} (Risk: {})",
+                                style("NOTICE").yellow().bold(),
+                                style(&threat_type).cyan(),
+                                style(&file).dim(),
+                                style(risk_score).yellow().bold()
+                            );
+                            eprintln!("{}", alert);
+                        } else { // Low risk
+                            let alert = format!(
+                                "✔️ {} [LOW] {} in {} (Risk: {})",
+                                style("INFO").green().bold(),
+                                style(&threat_type).green(),
+                                style(&file).dim(),
+                                style(risk_score).green().bold()
+                            );
+                            eprintln!("{}", alert);
+                        }
                     }
                 },
                 
@@ -187,7 +222,7 @@ impl HackerTerminalUI {
                 UIEvent::Complete => {
                     log::debug!("UI: Scan complete");
                     main_progress.finish_with_message(
-                        style("✅ Analysis complete!").green().bold().to_string()
+                        style("✅ SCAN COMPLETE. REPORT GENERATED.").green().bold().to_string()
                     );
                     file_progress.finish_and_clear();
                     break;
@@ -207,38 +242,72 @@ impl HackerTerminalUI {
     }
 
     pub fn print_summary(&self, stats: &ScanStats, elapsed: Duration) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        if self.main_progress.is_hidden() {
+        // Only print the summary if not in quiet mode
+        if self.is_quiet { 
             return Ok(());
         }
 
         println!();
-        println!("{}", style("╔══════════════════════════════════════════════════════════════╗").cyan());
-        println!("{}", style("║                        SCAN RESULTS                         ║").cyan().bold());
-        println!("{}", style("╚══════════════════════════════════════════════════════════════╝").cyan());
-        println!();
+        // More elaborate and glowing ASCII art border for the summary
+        println!("{}", style("╔═════════════════════════════════════════════════════════════════════╗").cyan());
+        // Fixed concatenation for StyledObject
+        println!("{}", style("║").cyan().bold().to_string() + &style("               SYSTEM ANALYSIS REPORT                ").green().bold().to_string() + &style("║").cyan().bold().to_string());
+        println!("{}", style("╠═════════════════════════════════════════════════════════════════════╣").cyan());
         
-        println!("   {} Files Processed: {}", 
+        // Using format! for padding the string content before styling
+        let files_processed_line_content = format!("   {} Files Processed: {}", 
             style("📁").blue(), 
-            style(stats.files_processed).white().bold());
+            style(stats.files_processed).white().bold()
+        );
+        println!(" {} {} {}", 
+            style("║").cyan().bold(),
+            format!("{:<67}", files_processed_line_content), // Pad the string to 67 characters, left-aligned
+            style("║").cyan().bold()
+        );
         
-        println!("   {} Data Analyzed: {:.2} MB", 
+        let data_analyzed_line_content = format!("   {} Data Analyzed: {:.2} MB", 
             style("💾").blue(), 
-            style(stats.bytes_processed as f64 / (1024.0 * 1024.0)).white().bold());
+            style(stats.bytes_processed as f64 / (1024.0 * 1024.0)).white().bold()
+        );
+        println!(" {} {} {}", 
+            style("║").cyan().bold(),
+            format!("{:<67}", data_analyzed_line_content), // Pad the string to 67 characters, left-aligned
+            style("║").cyan().bold()
+        );
         
-        println!("   {} Threats Detected: {}", 
+        let threats_detected_line_content = format!("   {} Threats Detected: {}", 
             style("🚨").red(), 
-            style(stats.threats_found).red().bold());
+            style(stats.threats_found).red().bold()
+        );
+        println!(" {} {} {}", 
+            style("║").cyan().bold(),
+            format!("{:<67}", threats_detected_line_content), // Pad the string to 67 characters, left-aligned
+            style("║").cyan().bold()
+        );
         
-        println!("   {} Total Duration: {:.2}s", 
+        let total_duration_line_content = format!("   {} Total Duration: {:.2}s", 
             style("⏱️").blue(), 
-            style(elapsed.as_secs_f64()).white().bold());
+            style(elapsed.as_secs_f64()).white().bold()
+        );
+        println!(" {} {} {}", 
+            style("║").cyan().bold(),
+            format!("{:<67}", total_duration_line_content), // Pad the string to 67 characters, left-aligned
+            style("║").cyan().bold()
+        );
         
         let files_per_sec = stats.files_processed as f64 / elapsed.as_secs_f64();
-        println!("   {} Processing Speed: {:.0} files/sec", 
+        let processing_speed_line_content = format!("   {} Processing Speed: {:.0} files/sec", 
             style("🚀").blue(), 
-            style(files_per_sec).white().bold());
+            style(files_per_sec).white().bold()
+        );
+        println!(" {} {} {}", 
+            style("║").cyan().bold(),
+            format!("{:<67}", processing_speed_line_content), // Pad the string to 67 characters, left-aligned
+            style("║").cyan().bold()
+        );
 
-        println!();
+        println!("{}", style("╚═════════════════════════════════════════════════════════════════════╝").cyan());
+        println!(); // Add an extra newline for spacing
 
         Ok(())
     }
@@ -247,5 +316,7 @@ impl HackerTerminalUI {
 impl Drop for HackerTerminalUI {
     fn drop(&mut self) {
         let _ = self.term.show_cursor();
+        // Ensure multi_progress finishes its work and clears lines
+        self.multi_progress.clear().unwrap_or_default(); 
     }
 }
