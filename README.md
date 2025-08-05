@@ -71,7 +71,7 @@ src/
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/synth.git
+git clone https://github.com/xsyncio/synth.git
 cd synth
 
 # Build in release mode for maximum performance
