@@ -46,7 +46,7 @@ fn display_banner() {
     println!("{}", format_line("User", &user));
     println!("{}", format_line("Host", &hostname));
     println!("{}", format_line("Platform", &format!("{}/{}", os, arch)));
-    println!("{}", format_line("Version", "v2.1.3-advanced"));
+    println!("{}", format_line("Version", concat!("v", env!("CARGO_PKG_VERSION"))));
     
     println!("    \x1b[38;5;240m└───────────────────────────────────────────────────┘\x1b[0m");
     println!();
@@ -90,7 +90,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     log::info!("Synth starting with args: {:?}", args);
 
-    let scanner = AdvancedOsintScanner::new(args).await?;
+    let scanner = std::sync::Arc::new(AdvancedOsintScanner::new(args.clone()).await?);
+
+    if args.watch {
+        use synth::watcher::ScannerWatcher;
+        let base_path = std::path::PathBuf::from(&args.directory);
+        
+        let (watcher, rx) = ScannerWatcher::new(scanner.clone());
+        if let Err(e) = watcher.watch(base_path, rx).await {
+            log::error!("Watch mode failed: {}", e);
+        }
+        return Ok(());
+    }
+
     let report = scanner.scan().await?;
 
     // Professional completion message with subtle styling

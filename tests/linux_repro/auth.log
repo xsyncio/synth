@@ -1,0 +1,2 @@
+Dec 15 12:00:01 server sshd[1234]: Failed password for invalid user admin from 192.168.1.1 port 22 ssh2
+Dec 15 12:05:00 server sudo: pam_unix(sudo:auth): authentication failure; logname= user=root

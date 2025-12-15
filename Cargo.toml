@@ -2,6 +2,15 @@
 name = "synth"
 version = "0.2.0"
 edition = "2021"
+authors = ["Xsyncio <xsyncio@users.noreply.github.com>"]
+description = "High-performance OSINT scanner and intelligence analysis framework"
+license = "GPL-3.0"
+repository = "https://github.com/xsyncio/synth"
+homepage = "https://github.com/xsyncio/synth"
+readme = "README.md"
+keywords = ["osint", "security", "forensics", "threat-intelligence", "scanner"]
+categories = ["command-line-utilities", "development-tools"]
+
 
 [dependencies]
 # CLI and argument parsing
@@ -14,6 +23,7 @@ rayon       = "1.10"
 # Serialization / Deserialization
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = "1.0"
+thiserror   = "2.0"
 # serde_yaml = "0.9"  # uncomment if you need YAML support
 
 # File system and I/O
@@ -48,6 +58,62 @@ num_cpus    = "1.16"
 
 # Data structures / helpers
 hex         = "0.4"
+
+# EXIF and metadata extraction (free, pure Rust)
+kamadak-exif = "0.6"
+
+# YARA rules engine (free, pure Rust implementation)
+yara-x = "1.10"
+
+# Binary analysis (PE/ELF parsing - free, pure Rust)
+goblin = "0.9"
+
+# Image analysis for steganography detection
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Network traffic analysis (PCAP parsing)
+pcap-parser = "0.16"
+
+# Forensics: Windows Event Logs
+evtx = "0.8"
+
+# Forensics: Browser artifacts (SQLite)
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Network: SSL/TLS certificate parsing
+x509-parser = "0.16"
+
+# Network: Email parsing
+# Network: Email parsing
+mailparse = "0.15"
+
+# Audio Steganography
+hound = "3.5"
+
+# Archive Analysis (Zip bombs)
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+
+# PDF Analysis (Stego/Hidden content)
+lopdf = "0.34"
+
+# Watch Mode (Live monitoring)
+# Watch Mode (Live monitoring)
+notify = "7.0"
+
+# --- Phase 6: Cloud & Infrastructure ---
+tar = "0.4"
+flate2 = "1.0"
+serde_yaml = "0.9"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+git2 = { version = "0.18", default-features = false, features = [] } 
+glob = "0.3"
+
+# --- Phase 6B: Windows Forensics ---
+nt-hive = "0.3"
+parselnk = "0.1"
+plist = "1.6"
+capstone = "0.12"
+fuzzyhash = "0.2"
 
 [dev-dependencies]
 tempfile    = "3.12"

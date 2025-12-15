@@ -129,6 +129,24 @@ pub fn calculate_entropy(data: &[u8]) -> f64 {
     entropy
 }
 
+/// Calculate sliding window entropy map
+pub fn calculate_entropy_map(data: &[u8], num_blocks: usize) -> Vec<f64> {
+    if data.is_empty() || num_blocks == 0 {
+        return Vec::new();
+    }
+    
+    let block_size = (data.len() / num_blocks).max(256); // Min 256 bytes per block for meaningful entropy
+    let mut map = Vec::new();
+    
+    for chunk in data.chunks(block_size) {
+        if chunk.len() < 64 { continue; } // Skip very small tail chunks
+        map.push(calculate_entropy(chunk));
+    }
+    
+    // Resize to fit exact visual if needed, but for now exact chunk entropy is better
+    map
+}
+
 /// Memory-efficient hash computation using memory mapping
 pub struct HashComputer;
 

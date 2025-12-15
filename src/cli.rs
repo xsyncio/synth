@@ -3,9 +3,9 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug, Clone)]
 #[command(
-    name = "osint-scanner", 
-    about = "Advanced OSINT Scanner - High-performance intelligence analysis tool",
-    version = "0.2.0"
+    name = "synth", 
+    about = "Synth - High-performance OSINT scanner and intelligence analysis tool",
+    version
 )]
 
 pub struct Args {
@@ -76,9 +76,13 @@ pub struct Args {
     /// Maximum memory usage in MB (0 = unlimited)
     #[arg(long, default_value = "1024")]
     pub max_memory: usize,
+
+    /// Enable Watch Mode (monitor directory for changes)
+    #[arg(long)]
+    pub watch: bool,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, PartialEq)]
 pub enum SearchMode {
     /// Fast scanning with basic pattern matching
     Fast,

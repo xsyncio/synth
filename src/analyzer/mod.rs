@@ -1,17 +1,21 @@
 use crate::models::{CryptoArtifact, ForensicEvidence, NetworkArtifact, ThreatIndicator};
-use crate::utils::{calculate_entropy, is_likely_text, StreamingTextReader};
+use crate::utils::{calculate_entropy, calculate_entropy_map, is_likely_text, StreamingTextReader};
 use bytes::Bytes;
 use memmap2::Mmap;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-#[allow(dead_code)]
+
+/// Content analyzer for detecting patterns in file content.
+/// Pre-compiles all regex patterns for optimal performance.
 pub struct ContentAnalyzer {
     pub(crate) crypto_patterns: Vec<(Regex, String)>,
     pub(crate) network_patterns: Vec<(Regex, String)>,
     pub(crate) threat_patterns: Vec<(Regex, String, u8)>,
-    pub(crate) malware_hashes: HashSet<String>,
+    pub(crate) _malware_hashes: HashSet<String>,
     pub(crate) suspicious_domains: HashSet<String>,
+    /// Pre-compiled Base64 pattern for obfuscation detection
+    pub(crate) obfuscation_pattern: Option<Regex>,
 }
 
 
@@ -21,8 +25,9 @@ impl ContentAnalyzer {
             crypto_patterns: Self::compile_crypto_patterns(),
             network_patterns: Self::compile_network_patterns(),
             threat_patterns: Self::compile_threat_patterns(),
-            malware_hashes: Self::load_malware_hashes(),
+            _malware_hashes: Self::load_malware_hashes(),
             suspicious_domains: Self::load_suspicious_domains(),
+            obfuscation_pattern: Regex::new(r"[A-Za-z0-9+/]{20,}={0,2}").ok(),
         }
     }
 
@@ -63,6 +68,7 @@ impl ContentAnalyzer {
         
         // Calculate entropy for the entire file
         result.entropy = Some(calculate_entropy(mmap));
+        result.entropy_map = calculate_entropy_map(mmap, 50);
         
         // Detect encryption based on high entropy
         if result.entropy.unwrap_or(0.0) > 7.8 {
@@ -105,7 +111,8 @@ impl ContentAnalyzer {
                 let artifact = NetworkArtifact {
                     artifact_type: description.clone(),
                     value: mat.as_str().to_string(),
-                    context: Self::extract_context(&content, mat.start(), mat.end()),
+                    description: Self::extract_context(&content, mat.start(), mat.end()),
+                    source: "Content Analysis".to_string(),
                     confidence: Self::calculate_confidence(mat.as_str(), description),
                 };
                 
@@ -374,6 +381,7 @@ pub struct AnalysisResult {
     pub threat_indicators: Vec<ThreatIndicator>,
     pub forensic_evidence: Vec<ForensicEvidence>,
     pub entropy: Option<f64>,
+    pub entropy_map: Vec<f64>,
     pub encrypted_content: bool,
     pub steganography_detected: bool,
 }
